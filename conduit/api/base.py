@@ -6,7 +6,7 @@ from django.core.urlresolvers import reverse, NoReverseMatch
 from django.db.models.fields import FieldDoesNotExist
 from django.db import models
 from django.conf.urls import url
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes import fields, generic
 
 from decimal import Decimal
 from dateutil import parser
@@ -871,6 +871,9 @@ class ModelResource(Resource):
         ## FIXME: this is dangerous and stupid
         if isinstance(field, models.ManyToManyField):
             return eval(field.value_to_string(obj))
+
+        if isinstance(field, fields.GenericRelation):
+            return field.value_to_string(obj)
 
         logger.info('Could not find field type match for {0}'.format(field))
         return None
