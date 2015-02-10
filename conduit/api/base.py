@@ -872,6 +872,13 @@ class ModelResource(Resource):
         if isinstance(field, models.ManyToManyField):
             return eval(field.value_to_string(obj))
 
+        if isinstance(field, models.related.RelatedObject):
+            for virtual_field in self.Meta.model._meta.virtual_fields:
+                if virtual_field.name == 'content_object':
+                    related_obj = getattr(obj, virtual_field.name)
+                    return field.field.value_to_string(related_obj)
+            return None
+
         if isinstance(field, fields.GenericRelation):
             return field.value_to_string(obj)
 
