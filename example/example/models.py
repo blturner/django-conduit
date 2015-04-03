@@ -20,12 +20,12 @@ class Foo(models.Model):
     birthday = models.DateField(auto_now_add=True)
     decimal = models.DecimalField(max_digits=5, decimal_places=2)
     file_field = models.FileField(upload_to='test')
-    bar = models.ForeignKey(Bar, null=True)
+    bar = models.ForeignKey(Bar, blank=True, null=True)
     bazzes = models.ManyToManyField(Baz)
 
 
 class Item(models.Model):
-    content_type = models.ForeignKey(ContentType, null=True)
+    content_type = models.ForeignKey(ContentType, blank=True, null=True)
     object_id = models.PositiveIntegerField(null=True)
     content_object = generic.GenericForeignKey('content_type', 'object_id')
 

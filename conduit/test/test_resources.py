@@ -331,8 +331,6 @@ class ResourceTestCase(ConduitTestCase):
 
     def test_related_fields_empty_data(self):
         data = {
-            # 'bar': {},
-            # 'bazzes': {},
             'boolean': False,
             'decimal': '110.12',
             'float_field': 100000.123456789,
@@ -372,6 +370,4 @@ class ResourceTestCase(ConduitTestCase):
 
         self.assertTrue(content['id'])
         self.assertTrue(content['resource_uri'])
-        self.assertEqual(content['content_type'], None)
-        self.assertEqual(content['content_type_id'], None)
-        self.assertEqual(content['object_id'], None)
+        self.assertFalse(content['content_object'])

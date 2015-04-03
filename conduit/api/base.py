@@ -500,6 +500,7 @@ class ModelResource(Resource):
                     model_field = self.Meta.model._meta.get_field(fieldname)
                     data[fieldname] = self._from_basic_type(model_field, data[fieldname])
                 except FieldDoesNotExist:
+                    logger.info('Could not find field: {0}'.format(fieldname))
                     # We don't try to modify fields we don't know about
                     # or artificial fields like resource_uri
                     pass
@@ -632,7 +633,7 @@ class ModelResource(Resource):
         for bundle in kwargs['bundles']:
             obj = bundle['obj']
             request_data = bundle['request_data']
-
+            related_data = None
             # Get all ForeignKey fields on the Model
             fk_fieldnames = self._get_type_fieldnames(obj, models.ForeignKey)
             # Get explicit FK fields which are not Model fields
@@ -641,26 +642,39 @@ class ModelResource(Resource):
             fk_fieldnames = set(fk_fieldnames)
 
             for fieldname in fk_fieldnames:
-                # Only updated the related field if data was specified
+                # Get the data to process
+                required = True
+                opts = obj._meta.get_field(fieldname)
+
+                if opts.blank and opts.null:
+                    required = False
+
+                if fieldname not in request_data and required:
+                    error_dict = {
+                        fieldname: 'This field is required.'
+                    }
+                    response = self.create_json_response(py_obj=error_dict, status=500)
+                    raise HttpInterrupt(response)
+
                 if fieldname in request_data:
-                    related_data = request_data.get(fieldname)
+                    related_data = request_data[fieldname]
 
-                    # If we are using a related resource field, use it
-                    conduit_field = self._get_explicit_field_by_attribute(fieldname)
-                    if conduit_field:
-                        try:
-                            conduit_field.save_related(request, self, obj, related_data)
-                        except HttpInterrupt as e:
-                            # Raise the error but specify it as occuring within
-                            # the related field
-                            error_dict = {fieldname: json.loads(e.response.content)}
-                            response = self.create_json_response(py_obj=error_dict, status=e.response.status_code)
-                            raise HttpInterrupt(response)
+                # If we are using a related resource field, use it
+                conduit_field = self._get_explicit_field_by_attribute(fieldname)
+                if conduit_field and related_data:
+                    try:
+                        conduit_field.save_related(request, self, obj, related_data)
+                    except HttpInterrupt as e:
+                        # Raise the error but specify it as occuring within
+                        # the related field
+                        error_dict = {fieldname: json.loads(e.response.content)}
+                        response = self.create_json_response(py_obj=error_dict, status=e.response.status_code)
+                        raise HttpInterrupt(response)
 
-                    # Otherwise we do it simply with primary keys
-                    else:
-                        id_fieldname = '{0}_id'.format(fieldname)
-                        setattr(obj, id_fieldname, related_data)
+                # Otherwise we do it simply with primary keys
+                elif related_data:
+                    id_fieldname = '{0}_id'.format(fieldname)
+                    setattr(obj, id_fieldname, related_data)
 
         return request, args, kwargs
 
@@ -698,7 +712,14 @@ class ModelResource(Resource):
         for bundle in kwargs['bundles']:
             obj = bundle['obj']
             self._update_from_dict(obj, bundle['request_data'])
-            obj.save()
+            try:
+                obj.save()
+            except Exception, err:
+                error_dict = {'message': err.message}
+                logger.debug(obj)
+                logger.exception(err)
+                response = self.create_json_response(py_obj=error_dict, status=500)
+                raise HttpInterrupt(response)
             # Refetch the object so that we can return an accurate
             # representation of the data that is being persisted 
             bundle['obj'] = self.Meta.model.objects.get(**{self.Meta.pk_field: getattr( obj, self.Meta.pk_field )})
