@@ -3,7 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from conduit.api import ModelResource
 from conduit.api.fields import ForeignKeyField, ManyToManyField, GenericForeignKeyField
-from example.models import Bar, Baz, Foo, Item
+from example.models import Bar, Baz, Foo, Item, FooBar
 
 
 class BarResource(ModelResource):
@@ -54,3 +54,11 @@ class ItemResource(ModelResource):
             },
             embed=True
         )
+
+
+class FooBarResource(ModelResource):
+    class Meta(ModelResource.Meta):
+        model = FooBar
+
+    class Fields:
+        bar = ForeignKeyField(attribute='bar', resource_cls=BarResource)

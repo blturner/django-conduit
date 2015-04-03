@@ -28,3 +28,11 @@ class Item(models.Model):
     content_type = models.ForeignKey(ContentType, null=True)
     object_id = models.PositiveIntegerField(null=True)
     content_object = generic.GenericForeignKey('content_type', 'object_id')
+
+
+class FooBar(models.Model):
+    """
+    A model with a required ForeignKey.
+    """
+    name = models.CharField(max_length=255)
+    bar = models.ForeignKey(Bar)

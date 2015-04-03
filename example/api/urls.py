@@ -7,6 +7,7 @@ from api.views import (
     ContentTypeResource,
     FooResource,
     ItemResource,
+    FooBarResource,
 )
 
 
@@ -16,6 +17,7 @@ api.register(BazResource())
 api.register(ContentTypeResource())
 api.register(FooResource())
 api.register(ItemResource())
+api.register(FooBarResource())
 
 urlpatterns = patterns('',
     url(r'^', include(api.urls))
